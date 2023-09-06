@@ -3,14 +3,15 @@ const router = express.Router()
 const { v4: uuid } = require('uuid')
 const fileMulter = require('../middleware/file_upload')
 
+
 const library = {
     books: [],
 }
 
 class Book {
-    constructor(title = "", descripton = "", authors = "", favorite = false, fileCover = "", fileName = "", fileBook = "", id = uuid()) {
+    constructor(title = "", description = "", authors = "", favorite = false, fileCover = "", fileName = "", fileBook = "", id = uuid()) {
         this.title = title
-        this.descripton = descripton
+        this.description = description
         this.authors = authors
         this.favorite = favorite
         this.fileCover = fileCover
@@ -21,11 +22,11 @@ class Book {
 }
 
 
-router.get('/', (req, res) => {
+router.get('/api/books', (req, res) => {
     res.json({books} = library)
 })
 
-router.get('/:id', (req, res) => {
+router.get('/api/books/:id', (req, res) => {
     const {books} = library
     const {id} = req.params
     const idx = books.findIndex(el => el.id === id)
@@ -38,20 +39,20 @@ router.get('/:id', (req, res) => {
     }
 })
 
-router.post('/', (req, res) => {
+router.post('/api/books', (req, res) => {
     const {books} = library
-    const {title, descripton, authors, favorite, fileCover, fileName, fileBook} = req.body
+    const {title, description, authors, favorite, fileCover, fileName, fileBook} = req.body
 
-    const newBook = new Book(title, descripton, authors, favorite, fileCover, fileName, fileBook)
+    const newBook = new Book(title, description, authors, favorite, fileCover, fileName, fileBook)
     books.push(newBook)
     
     res.status(201) // при создании новых записей принято возвращать 201
     res.json(newBook)
 })
 
-router.put('/:id', (req, res) => {
+router.put('/api/books/:id', (req, res) => {
     const {books} = library
-    const {title, descripton, authors, favorite, fileCover, fileName, fileBook} = req.body
+    const {title, description, authors, favorite, fileCover, fileName, fileBook} = req.body
     const {id} = req.params
 
     const idx = books.findIndex(el => el.id === id)
@@ -60,7 +61,7 @@ router.put('/:id', (req, res) => {
         books[idx] = {
             ...books[idx],
             title,
-            descripton,
+            description,
             authors,
             favorite,
             fileCover,
@@ -75,7 +76,7 @@ router.put('/:id', (req, res) => {
 })
 
 // загрузка файла книги
-router.put('/:id/upload', fileMulter.single('book-file'), (req, res) => {
+router.put('/api/books/:id/upload', fileMulter.single('book-file'), (req, res) => {
     const {books} = library
     const {id} = req.params
 
@@ -97,7 +98,7 @@ router.put('/:id/upload', fileMulter.single('book-file'), (req, res) => {
 })
 
 // выгрузка файла книги
-router.get('/:id/download', (req, res) => {
+router.get('/api/books/:id/download', (req, res) => {
     const {id} = req.params
     const idx = library.books.findIndex(el => el.id === id)
     res.download(library.books[idx].fileBook)
@@ -115,5 +116,111 @@ router.delete('/:id', (req, res) => {
         res.json('404 | not found')
     }
 })
+
+// api end
+
+router.get('/', (req, res) => {
+    res.redirect('/index')
+});
+
+[1, 2, 3].map(el => {
+    const newBook = new Book(`title ${el}`, `desc ${el}`, `authors ${el}`, true, `cover ${el}`, `name ${el}`, `book ${el}`)
+    library.books.push(newBook)
+})
+
+//список всех книг
+router.get('/index', (req, res) => {
+    const {books} = library
+    res.render('library/index', {
+        title: "Список всех книг",
+        books: books,
+    })
+})
+
+//информация по конкретной книге
+router.get('/view/:id', (req, res) => {
+    const {books} = library
+    const {id} = req.params
+    const idx = books.findIndex(el => el.id === id)
+
+    if (idx === -1) {
+        res.redirect('/404')
+    } 
+        
+    res.render("library/view", {
+        title: "Book | view",
+        books: books[idx],
+    });
+})
+
+//создание книги get
+router.get('/create', (req, res) => {
+    res.render("library/create", {
+        title: "Book | create",
+        books: {},
+    });
+})
+
+//создание книги post
+router.post('/create', (req, res) => {
+    const {books} = library;
+    const {title, description, authors} = req.body;
+
+    const newBook = new Book(title, description, authors);
+    books.push(newBook);
+
+    res.redirect('/index')
+})
+
+//редактирование книги get
+router.get('/update/:id', (req, res) => {
+    const {books} = library
+    const {id} = req.params
+    const idx = books.findIndex(el => el.id === id)
+    
+    if (idx === -1) {
+        res.redirect('/404')
+    }
+
+    res.render("library/update", {
+        title: "Book | view",
+        books: books[idx],
+    });
+})
+
+//редактирование книги post
+router.post('/update/:id', (req, res) => {
+    const {books} = library
+    const {id} = req.params
+    const {title, description, authors} = req.body
+    const idx = books.findIndex(el => el.id === id)
+
+    if (idx === -1) {
+        res.redirect('/404')
+    }
+    books[idx] = {
+        ...books[idx],
+        title,
+        description,
+        authors,
+    }
+    res.redirect(`/view/${id}`)
+})
+
+//удаление книги post
+router.post('/delete/:id', (req, res) => {
+    const {books} = library
+    const {id} = req.params
+    const idx = books.findIndex(el => el.id === id)
+
+    if (idx === -1) {
+        res.redirect('/404')
+    } 
+
+    books.splice(idx, 1)
+    res.redirect(`/index`)
+})
+
+
 
 module.exports = router
