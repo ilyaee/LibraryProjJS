@@ -1,4 +1,6 @@
 const express = require('express')
+require('dotenv').config();
+const PORT = process.env.PORT || 3001
 
 const loginApiRoute = require('./routes/loginApi')
 const booksApiRoute = require('./routes/books')
@@ -16,7 +18,6 @@ app.use('/', booksApiRoute)
 
 app.use(error404)
 
-const PORT = process.env.PORT || 3000
 app.listen(PORT, () => { // запуск приложения
-    console.log(`Server Listening on PORT ${PORT}`)
+    console.log(`LIBRARY Server Listening on PORT ${PORT}`)
 }) 
