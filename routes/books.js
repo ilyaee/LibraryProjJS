@@ -4,6 +4,7 @@ const { v4: uuid } = require('uuid')
 const fileMulter = require('../middleware/file_upload')
 const http = require('http')
 
+const COUNTER_URL = process.env.COUNTER_URL;
 
 const library = {
     books: [],
@@ -143,39 +144,62 @@ router.get('/view/:id', (req, res) => {
     const { books } = library
     const { id } = req.params
     const idx = books.findIndex(el => el.id === id)
-
+    let parseData = '';
     if (idx === -1) {
         res.redirect('/404')
     }
 
-    // увеличение счетчика просмотров
-    // http.post(`http://localhost:3002/counter/${id}/incr`)
-
-    // получение счетчика просмотров
-    http.get(`http://localhost:3002/counter/${id}`, (res) => {
-        if (res.statusCode !== 200) {
-            // такой книги нет TO DO
-        }
-        res.setEncoding('utf8')
-        let rowData = ''
-        res.on('data', (chunk) => rowData += chunk)
+    // увеличение счетчика просмотров в redis
+    const options = {
+        host: 'counter',
+        port: 3002,
+        path: `/counter/${id}/incr`,
+        method: 'POST',
+    };
+    const reqBookIncr = http.request(options, (res) => {
+        res.setEncoding('utf8');
+        let rowData = '';
+        res.on('data', (chunk) => rowData += chunk );
         res.on('end', () => {
-            let parseData = JSON.parse(rowData)
+            console.log(`POST answer: ${rowData}`)
+        })
+        console.log(`POST status code: ${res.statusCode}`)
+        if (res.statusCode !== 200) {
+            console.log(`POST status code: ${res.statusCode}`)
+        }
+    }).on('error', (err) => {
+        console.log(`POST req counter error: ${err}`)
+    })
+    reqBookIncr.end();
+
+ 
+    // получение счетчика просмотров из redis
+    http.get(`${COUNTER_URL}:3002/counter/${id}`, (resGet) => {
+        console.log(`GET status code: ${resGet.statusCode}`)
+        if (resGet.statusCode !== 200) {
+            console.log(`GET status code: ${resGet.statusCode}`)
+        }
+        resGet.setEncoding('utf8')
+        let rowData = ''
+        resGet.on('data', (chunk) => rowData += chunk)
+        resGet.on('end', () => {
+            parseData = JSON.parse(rowData);
+            console.log(`parseData on GET: ${parseData}`);
             res.render("library/view", {
                 title: "Book | view",
                 books: books[idx],
-                bookViewCount: parseData.redisCnt
+                bookViewCount: parseData,
             });
         })
-        res.on('error', err => {
-            console.log(`Ошибка  ${err}`)
-        })
+    }).on('error', (err) => {
+        console.log(`GET req counter error  ${err}`)
     })
-
+    console.log(`parseData after GET: ${parseData}`)
+    
     // res.render("library/view", {
     //     title: "Book | view",
     //     books: books[idx],
-    //     // передать counter на отрисовку 
+    //     bookViewCount: `${parseData}`,
     // });
 })
 

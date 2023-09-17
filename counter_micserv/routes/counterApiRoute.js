@@ -11,19 +11,21 @@ const client = redis.createClient({ url: REDIS_URL });
 })()
 
 router.post('/:bookId/incr', async (req, res) => {
-    const cnt = await client.incr(req.params.bookId)
+    const { bookId } = req.params
+    const cnt = await client.incr(bookId)
     res.json(cnt)
+    res.statusCode = 200;
 })
 
-router.get('/:bookId', (req, res) => {
+router.get('/:bookId', async (req, res) => {
     try {
-        const redisCnt = client.get(req.params.bookId)
+        const redisCnt = await client.get(req.params.bookId)
         res.json(redisCnt)
+        res.statusCode = 200;
     } catch (err) {
         res.json(`redis error: ${err}`)
     }
 
 })
-
 
 module.exports = router

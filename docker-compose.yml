@@ -26,6 +26,7 @@ services:
       - 80:3001
     environment:
       - PORT=3001
+      - COUNTER_URL=http://counter
     command: npm run dev
     depends_on:
       - counter
