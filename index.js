@@ -16,7 +16,7 @@ app.use(express.json())
 app.use(express.urlencoded());
 app.set("view engine", "ejs");
 
-app.use('/api/user/login', loginApiRoute)
+app.use('/api/user', loginApiRoute)
 app.use('/', booksApiRoute)
 
 app.use(error404)
